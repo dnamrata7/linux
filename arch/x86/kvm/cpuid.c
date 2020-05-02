@@ -18,6 +18,8 @@
 #include <asm/processor.h>
 #include <asm/user.h>
 #include <asm/fpu/xstate.h>
+#include <asm/atomic.h>
+
 #include "cpuid.h"
 #include "lapic.h"
 #include "mmu.h"
@@ -1053,17 +1055,59 @@ bool kvm_cpuid(struct kvm_vcpu *vcpu, u32 *eax, u32 *ebx,
 	return found;
 }
 EXPORT_SYMBOL_GPL(kvm_cpuid);
+atomic_t num_exits[69] = { ATOMIC_INIT(0) };
+long atomic_t total_time = ATOMIC_INIT(0);
+long atomic_t time_exits[69] = { ATOMIC_INIT(0) };
+EXPORT_SYMBOL(num_exits);
+EXPORT_SYMBOL(total_time);
+EXPORT_SYMBOL(time_exits);
+
 
 int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 {
 	u32 eax, ebx, ecx, edx;
-
+        atomic_t total_exits=0;
+	u32 ip;
+	int i;
 	if (cpuid_fault_enabled(vcpu) && !kvm_require_cpl(vcpu, 0))
 		return 1;
 
 	eax = kvm_rax_read(vcpu);
 	ecx = kvm_rcx_read(vcpu);
-	kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
+	ip = ecx;
+	printk("system in fun %d\n",eax);
+
+	for (i=0;i<70;i++)
+	{
+	   if(atomic_read(&num_exits[i])!=0)
+	   {
+		total_exits = atomic_read(&total_exits) +         			atomic_read(&num_exits[i]);
+	   }
+	}
+	
+	if(eax == 0x4fffffff)
+	  {
+	     eax = atomic_read(&total_exits);
+	  }
+	else if(eax == 0x4ffffffd)
+	  {
+	     eax = atomic_read(&num_exits[ip]);
+	  }
+	else if(eax == 0x4ffffffe)
+	  {
+	        ecx = atomic_read(&total_time); 
+		ebx = (atomic_read(&total_time) >> 32) ; // for higher 32 bits
+	  }
+	else if(eax == 0x4ffffffc)
+	  {
+		ecx = atomic_read(&time_exits[ip]); 
+		ebx = (atomic_read(&time_exits[ip]) >> 32) ; // for higher 32 bits
+	  }
+	else
+	   {
+              kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
+           }
+
 	kvm_rax_write(vcpu, eax);
 	kvm_rbx_write(vcpu, ebx);
 	kvm_rcx_write(vcpu, ecx);

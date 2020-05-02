@@ -44,6 +44,7 @@
 #include <asm/spec-ctrl.h>
 #include <asm/virtext.h>
 #include <asm/vmx.h>
+#include <asm/atomic.h>
 
 #include "capabilities.h"
 #include "cpuid.h"
@@ -5846,6 +5847,14 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
 
+  	extern atomic_t num_exits[69];
+        extern long atomic_t total_time;
+	extern long atomic_t time_exits[69];
+	
+	long atomic_t start = rdtsc();
+	atomic_inc(&num_exits[exit_reason]);
+		
+	//num_exits[exit_reason]++;
 	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
 
 	/*
@@ -5953,7 +5962,13 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 	if (!kvm_vmx_exit_handlers[exit_reason])
 		goto unexpected_vmexit;
 
-	return kvm_vmx_exit_handlers[exit_reason](vcpu);
+	//return kvm_vmx_exit_handlers[exit_reason](vcpu);
+
+	int ret = kvm_vmx_exit_handlers[exit_reason](vcpu);
+	long atomic_t end = rdtsc();
+	total_time = atomic_read(&total_time) + (atomic_read(&end) - 	 				atomic_read(&start));
+	time_exits[exit_reason] = atomic_read(&time_exits[exit_reason]) + 					  (atomic_read(&end) - atomic_read(&start));
+	return ret;
 
 unexpected_vmexit:
 	vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n", exit_reason);
