@@ -1075,7 +1075,7 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	eax = kvm_rax_read(vcpu);
 	ecx = kvm_rcx_read(vcpu);
 	ip = ecx;
-	printk("system in fun %d\n",eax);
+	//printk("system in fun %d\n",eax);
 
 	for (i=0;i<70;i++)
 	{
@@ -1097,7 +1097,9 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	  }
 	else if(eax == 0x4ffffffe)
 	  {
+		
 	        ecx = atomic64_read(&total_time); 
+		//printk("##############total time_ecx: %d ", ecx);
 		ebx = (atomic64_read(&total_time) >> 32) ; // for higher 32 bits
 	  }
 	else if(eax == 0x4ffffffc)

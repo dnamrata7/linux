@@ -5857,7 +5857,7 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 	start = rdtsc();
 	atomic_inc(&num_exits[exit_reason]);
 		
-	//num_exits[exit_reason]++;
+	
 	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
 
 	/*
@@ -5969,12 +5969,14 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 
 	ret = kvm_vmx_exit_handlers[exit_reason](vcpu);
 	end= rdtsc();
-
+ 	
 	atomic64_add((end - start), &total_time);
-	//total_time = atomic_read(&total_time) + (atomic_read(&end) - 	 				atomic_read(&start));
+	
+	//printk("**************total time: %lld ", 		 			atomic64_read(&total_time)); 
+	
 	atomic64_add((end - start), &time_exits[exit_reason]);
 	
-	//time_exits[exit_reason] = atomic_read(&time_exits[exit_reason]) + 					  (atomic_read(&end) - atomic_read(&start));
+	
 	return ret;
 
 unexpected_vmexit:
