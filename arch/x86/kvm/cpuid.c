@@ -1056,8 +1056,8 @@ bool kvm_cpuid(struct kvm_vcpu *vcpu, u32 *eax, u32 *ebx,
 }
 EXPORT_SYMBOL_GPL(kvm_cpuid);
 atomic_t num_exits[69] = { ATOMIC_INIT(0) };
-long atomic_t total_time = ATOMIC_INIT(0);
-long atomic_t time_exits[69] = { ATOMIC_INIT(0) };
+atomic64_t total_time = ATOMIC_INIT(0);
+atomic64_t  time_exits[69] = { ATOMIC_INIT(0) };
 EXPORT_SYMBOL(num_exits);
 EXPORT_SYMBOL(total_time);
 EXPORT_SYMBOL(time_exits);
@@ -1066,7 +1066,7 @@ EXPORT_SYMBOL(time_exits);
 int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 {
 	u32 eax, ebx, ecx, edx;
-        atomic_t total_exits=0;
+        atomic_t total_exits= ATOMIC_INIT(0);
 	u32 ip;
 	int i;
 	if (cpuid_fault_enabled(vcpu) && !kvm_require_cpl(vcpu, 0))
@@ -1081,7 +1081,9 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	{
 	   if(atomic_read(&num_exits[i])!=0)
 	   {
-		total_exits = atomic_read(&total_exits) +         			atomic_read(&num_exits[i]);
+		atomic_add(atomic_read(&num_exits[i]), &total_exits);		
+		
+		//total_exits = atomic_read(&total_exits) +         			atomic_read(&num_exits[i]);
 	   }
 	}
 	
@@ -1095,13 +1097,13 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	  }
 	else if(eax == 0x4ffffffe)
 	  {
-	        ecx = atomic_read(&total_time); 
-		ebx = (atomic_read(&total_time) >> 32) ; // for higher 32 bits
+	        ecx = atomic64_read(&total_time); 
+		ebx = (atomic64_read(&total_time) >> 32) ; // for higher 32 bits
 	  }
 	else if(eax == 0x4ffffffc)
 	  {
-		ecx = atomic_read(&time_exits[ip]); 
-		ebx = (atomic_read(&time_exits[ip]) >> 32) ; // for higher 32 bits
+		ecx = atomic64_read(&time_exits[ip]); 
+		ebx = (atomic64_read(&time_exits[ip]) >> 32) ; // for higher 32 bits
 	  }
 	else
 	   {

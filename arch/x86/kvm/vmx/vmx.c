@@ -5848,10 +5848,13 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 	u32 vectoring_info = vmx->idt_vectoring_info;
 
   	extern atomic_t num_exits[69];
-        extern long atomic_t total_time;
-	extern long atomic_t time_exits[69];
+        extern atomic64_t total_time;
+	extern atomic64_t time_exits[69];
 	
-	long atomic_t start = rdtsc();
+	u64 start;
+	u64 end;
+	int ret;
+	start = rdtsc();
 	atomic_inc(&num_exits[exit_reason]);
 		
 	//num_exits[exit_reason]++;
@@ -5964,10 +5967,14 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 
 	//return kvm_vmx_exit_handlers[exit_reason](vcpu);
 
-	int ret = kvm_vmx_exit_handlers[exit_reason](vcpu);
-	long atomic_t end = rdtsc();
-	total_time = atomic_read(&total_time) + (atomic_read(&end) - 	 				atomic_read(&start));
-	time_exits[exit_reason] = atomic_read(&time_exits[exit_reason]) + 					  (atomic_read(&end) - atomic_read(&start));
+	ret = kvm_vmx_exit_handlers[exit_reason](vcpu);
+	end= rdtsc();
+
+	atomic64_add((end - start), &total_time);
+	//total_time = atomic_read(&total_time) + (atomic_read(&end) - 	 				atomic_read(&start));
+	atomic64_add((end - start), &time_exits[exit_reason]);
+	
+	//time_exits[exit_reason] = atomic_read(&time_exits[exit_reason]) + 					  (atomic_read(&end) - atomic_read(&start));
 	return ret;
 
 unexpected_vmexit:
