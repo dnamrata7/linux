@@ -1075,21 +1075,23 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	eax = kvm_rax_read(vcpu);
 	ecx = kvm_rcx_read(vcpu);
 	ip = ecx;
-	//printk("system in fun %d\n",eax);
-
+	
 	for (i=0;i<70;i++)
 	{
 	   if(atomic_read(&num_exits[i])!=0)
 	   {
 		atomic_add(atomic_read(&num_exits[i]), &total_exits);		
+		printk("-------------------Number of exits for reason %d: %d", 			i,atomic_read(&num_exits[i]));
 		
-		//total_exits = atomic_read(&total_exits) +         			atomic_read(&num_exits[i]);
+		
 	   }
 	}
 	
+	printk("############ Number of total exits: %d", 				atomic_read(&total_exits));
 	if(eax == 0x4fffffff)
 	  {
 	     eax = atomic_read(&total_exits);
+		
 	  }
 	else if(eax == 0x4ffffffd)
 	  {
@@ -1099,7 +1101,7 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	  {
 		
 	        ecx = atomic64_read(&total_time); 
-		//printk("##############total time_ecx: %d ", ecx);
+		
 		ebx = (atomic64_read(&total_time) >> 32) ; // for higher 32 bits
 	  }
 	else if(eax == 0x4ffffffc)
