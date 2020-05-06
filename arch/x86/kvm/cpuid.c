@@ -1088,26 +1088,120 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	}
 	
 	printk("############ Number of total exits: %d", 				atomic_read(&total_exits));
+	
+
+	// Assignment 2 code 	
 	if(eax == 0x4fffffff)
 	  {
+	     //total number of exits
 	     eax = atomic_read(&total_exits);
 		
 	  }
-	else if(eax == 0x4ffffffd)
-	  {
-	     eax = atomic_read(&num_exits[ip]);
-	  }
+
 	else if(eax == 0x4ffffffe)
 	  {
-		
+		// total time spent 
 	        ecx = atomic64_read(&total_time); 
 		
 		ebx = (atomic64_read(&total_time) >> 32) ; // for higher 32 bits
 	  }
+
+	//Assignment 3 code
+
+	//number of exits according to input reasons.
+	else if(eax == 0x4ffffffd)
+
+	  {     
+		//filtering the exit reasons 
+		if(ecx >=0x00000000 && ecx <= 0x00000044)
+		{
+			//Not defined by intel sdm
+		  if(ecx == 0x00000023 || ecx == 0x00000026 ||
+		       ecx == 0x0000002a || ecx == 0x00000041)  
+			{
+				edx = 0xffffffff; 
+				eax = 0x00000000;
+				ebx = 0x00000000;
+				ecx = 0x00000000;
+			}
+			//Disabled by kvm
+		else if(ecx == 0x00000003 || ecx == 0x00000004 || 
+			ecx ==0x00000005 || ecx == 0x00000006 || 
+			ecx == 0x0000000b || ecx == 0x00000010 || 
+			ecx == 0x00000011 || ecx == 0x00000021 ||
+			ecx == 0x00000022 || ecx == 0x00000033 || 
+			ecx == 0x0000003f || ecx == 0x00000040 ||
+			ecx == 0x00000042 || ecx == 0x00000043 || 
+			ecx == 0x00000044 )                             
+			{
+				edx = 0x00000000; 
+				eax = 0x00000000;
+				ebx = 0x00000000;
+				ecx = 0x00000000;
+			}
+		else
+			{
+			  eax = atomic_read(&num_exits[ip]); 
+		 	  edx = 0x00000000;
+			}
+		}
+		// Not defined by intel sdm
+		else                                                  
+		  {
+			edx = 0xffffffff; 
+			eax = 0x00000000;
+			ebx = 0x00000000;
+			ecx = 0x00000000;		
+		  }
+
+	     
+	  }
+	
+	//time spent according to given exit reason
 	else if(eax == 0x4ffffffc)
 	  {
-		ecx = atomic64_read(&time_exits[ip]); 
-		ebx = (atomic64_read(&time_exits[ip]) >> 32) ; // for higher 32 bits
+		if(ecx >=0x00000000 && ecx <= 0x00000044)
+		{
+			//Not defined by intel sdm
+		  if(ecx == 0x00000023 || ecx == 0x00000026 ||
+		       ecx == 0x0000002a || ecx == 0x00000041)  
+			{
+				edx = 0xffffffff; 
+				eax = 0x00000000;
+				ebx = 0x00000000;
+				ecx = 0x00000000;
+			}
+			//Disabled by kvm
+		else if(ecx == 0x00000003 || ecx == 0x00000004 || 
+			ecx ==0x00000005 || ecx == 0x00000006 || 
+			ecx == 0x0000000b || ecx == 0x00000010 || 
+			ecx == 0x00000011 || ecx == 0x00000021 ||
+			ecx == 0x00000022 || ecx == 0x00000033 || 
+			ecx == 0x0000003f || ecx == 0x00000040 ||
+			ecx == 0x00000042 || ecx == 0x00000043 || 
+			ecx == 0x00000044 )                             
+			{
+				edx = 0x00000000; 
+				eax = 0x00000000;
+				ebx = 0x00000000;
+				ecx = 0x00000000;
+			}
+		else
+			{
+			  ecx = atomic64_read(&time_exits[ip]); 
+			  ebx = (atomic64_read(&time_exits[ip]) >> 32) ;
+		 	  edx = 0x00000000;
+			}
+		}
+		// Not defined by intel sdm
+		else                                                  
+		  {
+			edx = 0xffffffff; 
+			eax = 0x00000000;
+			ebx = 0x00000000;
+			ecx = 0x00000000;		
+		  }
+
 	  }
 	else
 	   {
